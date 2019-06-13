@@ -2,6 +2,7 @@
 <html>
 
 <head>
+    <title>Scale this recipe</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css">
@@ -42,6 +43,7 @@
     const scaledRecipe = document.getElementById("scaledRecipe");
     const conversionInput = document.getElementById("conversionFactor");
     const regex = /\d+[a-z]/g;
+    const url = new URL(window.location.href);
 
     function originalChanged() {
         const conversionFactor = parseInt(conversionInput.value);
@@ -51,13 +53,17 @@
             var firstCharIndex = str.search(/[a-zA-Z]/g);
             if (firstCharIndex > 0) {
                 var asNumber = parseFloat(str.slice(0, firstCharIndex));
-                asNumber = Math.round(asNumber * (conversionFactor / 100) * 100) / 100;
-                result.push(asNumber + str.substring(firstCharIndex));
+                if (!isNaN(asNumber)) {
+                    asNumber = Math.round(asNumber * (conversionFactor / 100) * 100) / 100;
+                    result.push(asNumber + str.substring(firstCharIndex));
+                } else {
+                    result.push(str.trimStart());
+                }
             } else {
-                result.push(str);
+                result.push(str.trimStart());
             }
         });
-
+        updateUrl(originalRecipe.value);
         scaledRecipe.value = result.join("\n");
     }
 
@@ -65,8 +71,26 @@
         if (conversionInput.value < 0) conversionInput.value = 0;
     }
 
-    // Set sample input on startup
-    originalRecipe.value = "Sauerteig\n250g Roggenmehl 1150\n250g Wasser\n20g Anstellgut"
+    function updateUrl(newRecipe) {
+        b64Recipe = btoa(newRecipe);
+        url.searchParams.set("r", btoa(newRecipe));
+        url.searchParams.set("s", conversionInput.value);
+        window.history.pushState({ path: url.toString(), pageTitle: document.title }, '', url.toString());
+    }
+
+    const recipe = url.searchParams.get("r");
+    const urlConversionFactor = url.searchParams.get("s");
+
+    if (urlConversionFactor) {
+        conversionInput.value = urlConversionFactor;
+    }
+
+    if (recipe) {
+        originalRecipe.value = atob(recipe);
+    } else {
+        originalRecipe.value = "Sauerteig\n250g Roggenmehl 1150\n250g Wasser\n20g Anstellgut"
+    }
+
     originalChanged();
 </script>
 
